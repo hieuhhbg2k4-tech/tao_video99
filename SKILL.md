@@ -37,15 +37,14 @@ Khi người dùng cung cấp **số SIM, giá bán, điểm mạnh** (hoặc ch
 2. Tách lời thoại tiếng Việt (ví dụ bằng Python `SpeechRecognition` với `language='vi-VN'`) kết hợp phân tích biên độ năng lượng RMS theo từng cửa sổ `100ms` từ `audio.wav` để xác định chính xác mốc thời gian (`startMs`, `endMs`) của từng cụm từ, con số và mức giá.
 3. Xuất danh sách token ra `src/captions.json` theo định dạng `Caption[]` của `@remotion/captions`.
 
-### Bước 3: Dựng Composition Remotion (`templates/SimSaleVideo.tsx` hoặc `templates/Plate3DVideo.tsx`)
+### Bước 3: Dựng Composition Remotion (`templates/PlateAuctionProVideo.tsx`, `templates/Plate3DVideo.tsx` hoặc `templates/SimSaleVideo.tsx`)
 Khởi tạo project Remotion với `remotion`, `@remotion/cli`, `@remotion/captions`, `@remotion/media`, `@remotion/three`, `three`, `@react-three/fiber`, `react`, `react-dom`:
+- **Bản Chuyên Biển Đấu Giá (`templates/PlateAuctionProVideo.tsx` + `assets/trung_dau_gia.jpg` + `assets/sfx_*.wav`):** Khuyên dùng cho video bán biển số xe:
+  1. **Mở đầu Split-Screen trên nền lưới tối (`0.0s – 2.4s`):** Bên trái là ảnh **TRÚNG ĐẤU GIÁ** (`trung_dau_gia.jpg`) tự động thay biển số động ở ô giữa; ở giữa có nút tròn `VIP`; bên phải là khung video viền vàng phát sáng; phía dưới có nút CTA vàng **`NHẮN TIN “QUAN TÂM”`**.
+  2. **Mở rộng toàn màn hình (`2.4s – 3.0s`):** Khung video phóng to mượt ra toàn màn hình `720x1280` kèm tiếng `sfx_whoosh.wav`.
+  3. **Khung TRÚNG ĐẤU GIÁ lơ lửng 3D phía trên đầu (`3.0s+`):** Đậu gọn ở vùng 1/3 trên, nghiêng 3D nhẹ nhàng và tự động đổi màu từng con số trên biển đúng nhịp nói + tiếng `sfx_ding.wav` / `sfx_slam.wav`.
+- **Bản 3D Three.js (`templates/Plate3DVideo.tsx` + `assets/sfx_*.wav`):** Dùng khối 3D Three.js xoay + kim cương 3D.
 - **Bản 2D (`templates/SimSaleVideo.tsx`):** Dùng cho video bán SIM cần gọn nhẹ, nhanh.
-- **Bản 3D PRO (`templates/Plate3DVideo.tsx` + `assets/sfx_*.wav`):** Khuyên dùng để giữ chân người xem tối đa:
-  1. **Ninja Entrance (`0.0s – 1.8s`):** Snap-zoom đột ngột (`1.24 -> 1.0`), lóe sáng trắng, banner lao vút vào khung hình + tiếng `sfx_whoosh.wav`.
-  2. **Biển số / Thẻ số 3D (`<ThreeCanvas>`):** Dựng khối 3D viền vàng kim loại, bay từ xa xoay 360° vào vị trí (`z: -10 -> 0`) kèm 2 viên kim cương 3D quay hai bên; tự động đổi màu từng con số trên texture 3D đúng nhịp nói + tiếng `sfx_slam.wav` / `sfx_ding.wav`.
-  3. **Camera động giữ chân (Dynamic Retention Camera):** Nhịp zoom nhẹ liên tục ở các mốc nhấn (`6.0s`, `10.7s`, `15.5s`, `29.9s`).
-  4. **Thẻ Giá Tiền đóng dấu + Shimmer Sweep:** Phóng to rồi đóng dấu xuống (`scale 1.75 -> 1.0`) kèm vệt sáng nghiêng quét ngang và nút CTA chốt đơn.
-  5. **Phụ đề TikTok Word-Highlight + Bút dạ quang:** Dùng `createTikTokStyleCaptions()` từ `@remotion/captions`; từ khóa quan trọng tự động được quét nền highlight từ trái sang phải.
 
 ### Bước 4: Render & kiểm tra kết quả
 1. Chạy render:
