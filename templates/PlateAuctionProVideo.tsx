@@ -48,8 +48,83 @@ const isKeyword = (text: string) =>
   KEYWORDS.has(text.trim().toLowerCase());
 
 /**
+ * Khung biển số chuẩn trắng-đen viền vàng (dùng sau đoạn mở đầu).
+ */
+const ClassicPlateCard: React.FC<{
+  hl2?: boolean;
+  hl6?: boolean;
+  plateTop?: string;
+  plateBottom?: string;
+}> = ({
+  hl2 = false,
+  hl6 = false,
+  plateTop = '30M',
+  plateBottom = '622.66',
+}) => {
+  const renderDigit = (ch: string, idx: number) => {
+    const is2 = ch === '2' && hl2;
+    const is6 = ch === '6' && hl6;
+    const active = is2 || is6;
+    const color = is2 ? '#D97706' : is6 ? '#16A34A' : '#0F172A';
+
+    return (
+      <span
+        key={idx}
+        style={{
+          display: 'inline-block',
+          color,
+          transform: active ? 'scale(1.16) translateY(-2px)' : 'scale(1)',
+          textShadow: active ? '0 0 12px rgba(250,204,21,0.55)' : 'none',
+        }}
+      >
+        {ch}
+      </span>
+    );
+  };
+
+  return (
+    <div
+      style={{
+        backgroundColor: '#F8FAFC',
+        border: '5px solid #0F172A',
+        borderRadius: 18,
+        padding: '10px 36px',
+        boxShadow: '0 14px 36px rgba(0, 0, 0, 0.55), 0 0 0 3px #FACC15',
+        textAlign: 'center',
+        minWidth: 320,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: 42,
+          fontWeight: 900,
+          letterSpacing: 4,
+          color: '#0F172A',
+          lineHeight: 1.05,
+        }}
+      >
+        {plateTop}
+      </div>
+      <div
+        style={{
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: 54,
+          fontWeight: 900,
+          letterSpacing: 3,
+          lineHeight: 1.08,
+          marginTop: 2,
+        }}
+      >
+        {plateBottom.split('').map(renderDigit)}
+      </div>
+    </div>
+  );
+};
+
+/**
  * Khung ảnh TRÚNG ĐẤU GIÁ có lớp biển số 30M / 622.66 đè khít vào ô trắng giữa ảnh
- * và tự động đổi màu từng con số theo nhịp nói.
+ * (dùng cho đoạn mở đầu Split-Screen).
  */
 const AuctionPlateCard: React.FC<{
   hl2?: boolean;
@@ -537,25 +612,23 @@ export const PlateAuctionProVideo: React.FC = () => {
         )}
       </div>
 
-      {/* SAU KHI MỞ TOÀN MÀN HÌNH (3.0s+): Đặt khung TRÚNG ĐẤU GIÁ 3D ở vùng 1/3 trên đầu */}
+      {/* SAU KHI MỞ TOÀN MÀN HÌNH (3.0s+): Đặt khung biển số cũ sắc nét ở vùng 1/3 trên đầu */}
       {t >= 2.9 && (
         <AbsoluteFill
           style={{
             alignItems: 'center',
-            paddingTop: 34,
+            paddingTop: 44,
             pointerEvents: 'none',
             perspective: 900,
           }}
         >
           <div
             style={{
-              width: 310,
-              fontSize: 7.8,
               opacity: topCardIn,
               transform: `scale(${0.7 + 0.3 * topCardIn}) rotateY(${tiltY}deg) rotateX(${tiltX}deg)`,
             }}
           >
-            <AuctionPlateCard hl2={hl2} hl6={hl6} />
+            <ClassicPlateCard hl2={hl2} hl6={hl6} />
           </div>
 
           {meaningTitle && (
