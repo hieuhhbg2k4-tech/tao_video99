@@ -10,8 +10,10 @@ import {
   useVideoConfig,
 } from 'remotion';
 import { Audio, Video } from '@remotion/media';
+import { ThreeCanvas } from '@remotion/three';
 import { createTikTokStyleCaptions } from '@remotion/captions';
 import type { Caption, TikTokPage } from '@remotion/captions';
+import * as THREE from 'three';
 import rawCaptions from './captions2.json';
 
 const SWITCH_CAPTIONS_EVERY_MS = 1200;
@@ -47,78 +49,136 @@ const KEYWORDS = new Set([
 const isKeyword = (text: string) =>
   KEYWORDS.has(text.trim().toLowerCase());
 
-/**
- * Khung biển số chuẩn trắng-đen viền vàng (dùng sau đoạn mở đầu).
- */
-const ClassicPlateCard: React.FC<{
-  hl2?: boolean;
-  hl6?: boolean;
-  plateTop?: string;
-  plateBottom?: string;
-}> = ({
-  hl2 = false,
-  hl6 = false,
-  plateTop = '30M',
-  plateBottom = '622.66',
-}) => {
-  const renderDigit = (ch: string, idx: number) => {
-    const is2 = ch === '2' && hl2;
-    const is6 = ch === '6' && hl6;
-    const active = is2 || is6;
-    const color = is2 ? '#D97706' : is6 ? '#16A34A' : '#0F172A';
+function createPlateTexture(hl2: boolean, hl6: boolean): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 580;
+  const ctx = canvas.getContext('2d')!;
 
-    return (
-      <span
-        key={idx}
-        style={{
-          display: 'inline-block',
-          color,
-          transform: active ? 'scale(1.16) translateY(-2px)' : 'scale(1)',
-          textShadow: active ? '0 0 12px rgba(250,204,21,0.55)' : 'none',
-        }}
-      >
-        {ch}
-      </span>
-    );
-  };
+  const grad = ctx.createLinearGradient(0, 0, 1024, 580);
+  grad.addColorStop(0, '#FFFFFF');
+  grad.addColorStop(0.5, '#F1F5F9');
+  grad.addColorStop(1, '#E2E8F0');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1024, 580);
+
+  ctx.strokeStyle = '#0F172A';
+  ctx.lineWidth = 26;
+  ctx.strokeRect(24, 24, 976, 532);
+
+  ctx.fillStyle = '#0F172A';
+  ctx.font = '900 175px system-ui, -apple-system, Segoe UI, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('30M', 512, 185);
+
+  const chars = ['6', '2', '2', '.', '6', '6'];
+  const widths = [125, 125, 125, 55, 125, 125];
+  const totalW = widths.reduce((a, b) => a + b, 0);
+  let curX = (1024 - totalW) / 2;
+  ctx.font = '900 205px system-ui, -apple-system, Segoe UI, sans-serif';
+
+  chars.forEach((ch, i) => {
+    const cx = curX + widths[i] / 2;
+    if (ch === '2' && hl2) {
+      ctx.fillStyle = '#D97706';
+    } else if (ch === '6' && hl6) {
+      ctx.fillStyle = '#16A34A';
+    } else {
+      ctx.fillStyle = '#0F172A';
+    }
+    ctx.fillText(ch, cx, 405);
+    curX += widths[i];
+  });
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+/**
+ * Khối biển số 3D Three.js viền vàng kim loại + 2 kim cương 3D quay hai bên
+ * (xuất hiện từ 2.9s sau khi video mở toàn màn hình).
+ */
+const Plate3DMesh: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const t = frame / fps;
+
+  const hl2 = (t >= 10.7 && t < 15.4) || (t >= 22.2 && t < 29.3);
+  const hl6 = (t >= 15.5 && t < 22.1) || (t >= 22.2 && t < 29.3);
+  const texture = useMemo(() => createPlateTexture(hl2, hl6), [hl2, hl6]);
+
+  if (t < 2.9) return null;
+
+  const pFrame = Math.max(0, frame - Math.round(2.9 * fps));
+  const enter = spring({
+    frame: pFrame,
+    fps,
+    config: { damping: 12, stiffness: 210 },
+  });
+
+  const zPos = interpolate(enter, [0, 1], [-10, 0]);
+  const spinY = interpolate(enter, [0, 1], [Math.PI * 2, 0]);
+  const idleYaw = Math.sin(pFrame * 0.045) * 0.18;
+  const idlePitch = Math.cos(pFrame * 0.035) * 0.07;
+  const yPos = 1.95 + Math.sin(pFrame * 0.06) * 0.05;
+  const lightX = Math.sin(pFrame * 0.07) * 4;
 
   return (
-    <div
-      style={{
-        backgroundColor: '#F8FAFC',
-        border: '5px solid #0F172A',
-        borderRadius: 18,
-        padding: '10px 36px',
-        boxShadow: '0 14px 36px rgba(0, 0, 0, 0.55), 0 0 0 3px #FACC15',
-        textAlign: 'center',
-        minWidth: 320,
-      }}
-    >
-      <div
-        style={{
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: 42,
-          fontWeight: 900,
-          letterSpacing: 4,
-          color: '#0F172A',
-          lineHeight: 1.05,
-        }}
+    <>
+      <ambientLight intensity={0.75} />
+      <directionalLight position={[4, 6, 8]} intensity={1.1} />
+      <pointLight position={[lightX, 4, 4]} intensity={2.2} color="#FDE047" />
+
+      <group
+        position={[0, yPos, zPos]}
+        rotation={[idlePitch, spinY + idleYaw, 0]}
+        scale={enter * 0.62}
       >
-        {plateTop}
-      </div>
-      <div
-        style={{
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: 54,
-          fontWeight: 900,
-          letterSpacing: 3,
-          lineHeight: 1.08,
-          marginTop: 2,
-        }}
-      >
-        {plateBottom.split('').map(renderDigit)}
-      </div>
-    </div>
+        <mesh position={[0, 0, -0.05]}>
+          <boxGeometry args={[3.15, 1.82, 0.14]} />
+          <meshStandardMaterial
+            color="#FACC15"
+            metalness={0.85}
+            roughness={0.2}
+          />
+        </mesh>
+
+        <mesh position={[0, 0, 0.02]}>
+          <boxGeometry args={[2.98, 1.66, 0.12]} />
+          <meshStandardMaterial
+            map={texture}
+            metalness={0.25}
+            roughness={0.28}
+          />
+        </mesh>
+
+        <mesh
+          position={[-1.95, 0, 0.1]}
+          rotation={[pFrame * 0.06, pFrame * 0.08, 0]}
+        >
+          <octahedronGeometry args={[0.22, 0]} />
+          <meshStandardMaterial
+            color="#FDE047"
+            metalness={0.9}
+            roughness={0.15}
+          />
+        </mesh>
+        <mesh
+          position={[1.95, 0, 0.1]}
+          rotation={[-pFrame * 0.06, -pFrame * 0.08, 0]}
+        >
+          <octahedronGeometry args={[0.22, 0]} />
+          <meshStandardMaterial
+            color="#4ADE80"
+            metalness={0.9}
+            roughness={0.15}
+          />
+        </mesh>
+      </group>
+    </>
   );
 };
 
@@ -127,36 +187,9 @@ const ClassicPlateCard: React.FC<{
  * (dùng cho đoạn mở đầu Split-Screen).
  */
 const AuctionPlateCard: React.FC<{
-  hl2?: boolean;
-  hl6?: boolean;
   plateTop?: string;
   plateBottom?: string;
-}> = ({
-  hl2 = false,
-  hl6 = false,
-  plateTop = '30M',
-  plateBottom = '622.66',
-}) => {
-  const renderDigit = (ch: string, idx: number) => {
-    const is2 = ch === '2' && hl2;
-    const is6 = ch === '6' && hl6;
-    const active = is2 || is6;
-    const color = is2 ? '#D97706' : is6 ? '#16A34A' : '#0F172A';
-
-    return (
-      <span
-        key={idx}
-        style={{
-          display: 'inline-block',
-          color,
-          transform: active ? 'scale(1.14)' : 'scale(1)',
-        }}
-      >
-        {ch}
-      </span>
-    );
-  };
-
+}> = ({ plateTop = '30M', plateBottom = '622.66' }) => {
   return (
     <div
       style={{
@@ -173,7 +206,6 @@ const AuctionPlateCard: React.FC<{
         src={staticFile('trung_dau_gia.jpg')}
         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
       />
-      {/* Ô trắng đè khít lên phần biển số gốc trong ảnh để hiển thị động biển mới */}
       <div
         style={{
           position: 'absolute',
@@ -206,11 +238,12 @@ const AuctionPlateCard: React.FC<{
             fontFamily: 'system-ui, -apple-system, Segoe UI, sans-serif',
             fontSize: '3.2em',
             fontWeight: 900,
+            color: '#0F172A',
             lineHeight: 1.0,
             letterSpacing: 1.5,
           }}
         >
-          {plateBottom.split('').map(renderDigit)}
+          {plateBottom}
         </div>
       </div>
     </div>
@@ -336,7 +369,7 @@ const CaptionPage: React.FC<{ page: TikTokPage }> = ({ page }) => {
 
 export const PlateAuctionProVideo: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
+  const { fps, width, height, durationInFrames } = useVideoConfig();
   const t = frame / fps;
 
   const captions = rawCaptions as Caption[];
@@ -348,8 +381,6 @@ export const PlateAuctionProVideo: React.FC = () => {
     });
   }, [captions]);
 
-  // Phase 1 (0.0s -> 2.4s): Mở đầu Split-Screen giống video mẫu (nền lưới tối + thẻ Trúng Đấu Giá bên trái + khung Video viền vàng bên phải + CTA dưới)
-  // Phase 2 (2.4s -> 3.0s): Khung video mở rộng mượt ra toàn màn hình 720x1280
   const introIn = spring({
     frame,
     fps,
@@ -361,7 +392,6 @@ export const PlateAuctionProVideo: React.FC = () => {
     config: { damping: 15, stiffness: 140 },
   });
 
-  // Video box geometry: từ [left: 274, top: 155, width: 422, height: 785, radius: 22] -> [0, 0, 720, 1280, 0]
   const vidLeft = interpolate(expand, [0, 1], [274, 0]);
   const vidTop = interpolate(expand, [0, 1], [155, 0]);
   const vidWidth = interpolate(expand, [0, 1], [422, 720]);
@@ -373,16 +403,6 @@ export const PlateAuctionProVideo: React.FC = () => {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
-
-  // Thẻ Trúng Đấu Giá đậu phía trên đầu sau khi video mở toàn màn hình (3.0s+)
-  const topCardIn = spring({
-    frame: Math.max(0, frame - Math.round(2.9 * fps)),
-    fps,
-    config: { damping: 12, stiffness: 200 },
-  });
-
-  const hl2 = (t >= 10.7 && t < 15.4) || (t >= 22.2 && t < 29.3);
-  const hl6 = (t >= 15.5 && t < 22.1) || (t >= 22.2 && t < 29.3);
 
   let meaningTitle = '';
   let meaningColor = '#FACC15';
@@ -397,7 +417,6 @@ export const PlateAuctionProVideo: React.FC = () => {
     meaningColor = '#38BDF8';
   }
 
-  // Thẻ giá / ưu đãi đóng dấu ở 29.9s
   const showOffer = t >= 29.9;
   const offerFrame = Math.max(0, frame - Math.round(29.9 * fps));
   const offerSlam = spring({
@@ -417,10 +436,6 @@ export const PlateAuctionProVideo: React.FC = () => {
     config: { damping: 11, stiffness: 220 },
   });
 
-  // Lắc nhẹ 3D cho thẻ biển trên đầu
-  const tiltY = Math.sin(frame * 0.045) * 8;
-  const tiltX = Math.cos(frame * 0.035) * 4;
-
   return (
     <AbsoluteFill
       style={{
@@ -437,6 +452,9 @@ export const PlateAuctionProVideo: React.FC = () => {
       <Sequence from={Math.round(2.4 * fps)} durationInFrames={16}>
         <Audio src={staticFile('sfx_whoosh.wav')} volume={0.6} />
       </Sequence>
+      <Sequence from={Math.round(2.9 * fps)} durationInFrames={18}>
+        <Audio src={staticFile('sfx_slam.wav')} volume={0.7} />
+      </Sequence>
       <Sequence from={Math.round(10.7 * fps)} durationInFrames={18}>
         <Audio src={staticFile('sfx_ding.wav')} volume={0.55} />
       </Sequence>
@@ -447,10 +465,9 @@ export const PlateAuctionProVideo: React.FC = () => {
         <Audio src={staticFile('sfx_slam.wav')} volume={0.8} />
       </Sequence>
 
-      {/* GIAI ĐOẠN MỞ ĐẦU (0.0s - 2.6s) GIỐNG VIDEO MẪU */}
+      {/* GIAI ĐOẠN MỞ ĐẦU (0.0s - 2.6s): Split-Screen nền lưới tối + TRÚNG ĐẤU GIÁ */}
       {introUiOpacity > 0.01 && (
         <AbsoluteFill style={{ opacity: introUiOpacity, pointerEvents: 'none' }}>
-          {/* Tiêu đề cột phải */}
           <div
             style={{
               position: 'absolute',
@@ -469,7 +486,6 @@ export const PlateAuctionProVideo: React.FC = () => {
             BIỂN VIP MỆNH KIM
           </div>
 
-          {/* Tiêu đề cột trái */}
           <div
             style={{
               position: 'absolute',
@@ -487,7 +503,6 @@ export const PlateAuctionProVideo: React.FC = () => {
             TRÚNG ĐẤU GIÁ
           </div>
 
-          {/* Ảnh TRÚNG ĐẤU GIÁ cột trái */}
           <div
             style={{
               position: 'absolute',
@@ -501,7 +516,6 @@ export const PlateAuctionProVideo: React.FC = () => {
             <AuctionPlateCard />
           </div>
 
-          {/* Nút tròn ở giữa */}
           <div
             style={{
               position: 'absolute',
@@ -527,7 +541,6 @@ export const PlateAuctionProVideo: React.FC = () => {
             VIP
           </div>
 
-          {/* CTA lớn ở dưới giống video mẫu */}
           <div
             style={{
               position: 'absolute',
@@ -570,7 +583,7 @@ export const PlateAuctionProVideo: React.FC = () => {
         </AbsoluteFill>
       )}
 
-      {/* KHUNG VIDEO CHÍNH (ban đầu bên phải, sau 2.4s phóng to toàn màn hình) */}
+      {/* KHUNG VIDEO CHÍNH */}
       <div
         style={{
           position: 'absolute',
@@ -590,7 +603,6 @@ export const PlateAuctionProVideo: React.FC = () => {
           style={{ width: '100%', height: '100%' }}
         />
 
-        {/* Tag nhỏ góc trên trái trong đoạn mở đầu */}
         {introUiOpacity > 0.05 && (
           <div
             style={{
@@ -612,35 +624,29 @@ export const PlateAuctionProVideo: React.FC = () => {
         )}
       </div>
 
-      {/* SAU KHI MỞ TOÀN MÀN HÌNH (3.0s+): Đặt khung biển số cũ sắc nét ở vùng 1/3 trên đầu */}
-      {t >= 2.9 && (
-        <AbsoluteFill
-          style={{
-            alignItems: 'center',
-            paddingTop: 44,
-            pointerEvents: 'none',
-            perspective: 900,
-          }}
-        >
-          <div
-            style={{
-              opacity: topCardIn,
-              transform: `scale(${0.7 + 0.3 * topCardIn}) rotateY(${tiltY}deg) rotateX(${tiltX}deg)`,
-            }}
-          >
-            <ClassicPlateCard hl2={hl2} hl6={hl6} />
-          </div>
+      {/* SAU KHI MỞ TOÀN MÀN HÌNH (2.9s+): Layer Biển số 3D Three.js + kim cương 3D */}
+      <ThreeCanvas
+        width={width}
+        height={height}
+        camera={{ position: [0, 0, 7], fov: 45 }}
+      >
+        <Plate3DMesh />
+      </ThreeCanvas>
 
+      {/* Overlay giải mã số, thẻ giá + shimmer và CTA */}
+      {t >= 2.9 && (
+        <AbsoluteFill style={{ pointerEvents: 'none', alignItems: 'center' }}>
           {meaningTitle && (
             <div
               style={{
-                marginTop: 10,
+                position: 'absolute',
+                top: 292,
                 backgroundColor: 'rgba(15, 23, 42, 0.92)',
                 border: `2px solid ${meaningColor}`,
                 borderRadius: 999,
-                padding: '7px 20px',
+                padding: '8px 22px',
                 fontFamily: 'system-ui, sans-serif',
-                fontSize: 19,
+                fontSize: 20,
                 fontWeight: 900,
                 color: meaningColor,
                 boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
@@ -653,15 +659,15 @@ export const PlateAuctionProVideo: React.FC = () => {
           {showOffer && (
             <div
               style={{
-                position: 'relative',
+                position: 'absolute',
+                top: 286,
                 overflow: 'hidden',
-                marginTop: 10,
                 opacity: offerSlam,
                 transform: `scale(${offerScale})`,
                 background: 'linear-gradient(135deg, #DC2626, #EA580C)',
                 border: '3px solid #FEF08A',
-                borderRadius: 18,
-                padding: '8px 28px',
+                borderRadius: 20,
+                padding: '10px 32px',
                 boxShadow: '0 14px 36px rgba(220, 38, 38, 0.55)',
                 textAlign: 'center',
               }}
@@ -681,7 +687,7 @@ export const PlateAuctionProVideo: React.FC = () => {
               <div
                 style={{
                   fontFamily: 'system-ui, sans-serif',
-                  fontSize: 28,
+                  fontSize: 32,
                   fontWeight: 900,
                   color: '#FFFFFF',
                   textShadow: '0 3px 8px rgba(0,0,0,0.45)',
@@ -689,21 +695,33 @@ export const PlateAuctionProVideo: React.FC = () => {
               >
                 GIÁ TỐT • SANG TÊN NGAY
               </div>
+              <div
+                style={{
+                  fontFamily: 'system-ui, sans-serif',
+                  fontSize: 19,
+                  fontWeight: 800,
+                  color: '#FEF08A',
+                  marginTop: 2,
+                }}
+              >
+                ✓ HỢP MỆNH KIM • PHONG THỦY ĐẸP
+              </div>
             </div>
           )}
 
           {t >= 34.7 && (
             <div
               style={{
-                marginTop: 10,
+                position: 'absolute',
+                top: 386,
                 opacity: ctaSpring,
-                transform: `translateY(${(1 - ctaSpring) * 18}px) scale(${ctaSpring})`,
+                transform: `translateY(${(1 - ctaSpring) * 20}px) scale(${ctaSpring})`,
                 backgroundColor: '#16A34A',
                 border: '2px solid #FFFFFF',
                 borderRadius: 999,
-                padding: '7px 24px',
+                padding: '8px 26px',
                 fontFamily: 'system-ui, sans-serif',
-                fontSize: 21,
+                fontSize: 22,
                 fontWeight: 900,
                 color: '#FFFFFF',
                 boxShadow: '0 8px 24px rgba(22, 163, 74, 0.5)',
@@ -715,7 +733,7 @@ export const PlateAuctionProVideo: React.FC = () => {
         </AbsoluteFill>
       )}
 
-      {/* Phụ đề bút dạ quang tiếng Việt (bật từ 2.8s sau khi video mở toàn màn hình) */}
+      {/* Phụ đề bút dạ quang tiếng Việt */}
       {pages.map((page, index) => {
         if (page.startMs < 2600) return null;
         const nextPage = pages[index + 1] ?? null;
