@@ -43,6 +43,11 @@ Khởi tạo project Remotion với `remotion`, `@remotion/cli`, `@remotion/capt
   1. **Mở đầu Split-Screen trên nền lưới tối (`0.0s – 2.4s`):** Bên trái là ảnh **TRÚNG ĐẤU GIÁ** (`trung_dau_gia.jpg`) tự động thay biển số động ở ô giữa; ở giữa có nút tròn `VIP`; bên phải là khung video viền vàng phát sáng; phía dưới có nút CTA vàng **`NHẮN TIN “QUAN TÂM”`**.
   2. **Mở rộng toàn màn hình (`2.4s – 3.0s`):** Khung video phóng to mượt ra toàn màn hình `720x1280` kèm tiếng `sfx_whoosh.wav`.
   3. **Khung TRÚNG ĐẤU GIÁ lơ lửng 3D phía trên đầu (`3.0s+`):** Đậu gọn ở vùng 1/3 trên, nghiêng 3D nhẹ nhàng và tự động đổi màu từng con số trên biển đúng nhịp nói + tiếng `sfx_ding.wav` / `sfx_slam.wav`.
+- **Bản Biển Số Kể Chuyện 3D (`templates/PlateStoryVideo.tsx`) — MẶC ĐỊNH KHUYÊN DÙNG cho biển số:** Mở đầu Split-Screen `TRÚNG ĐẤU GIÁ` → mở toàn màn hình → biển số 3D Three.js + kim cương xoay. **Chỉ cần sửa khối `CONFIG`** ở đầu file:
+  - `plateTop`, `plateBottom`, `videoSrc`, `introTitle/introTag/introCta`.
+  - `beats[]`: mỗi lần người nói giải nghĩa 1 con số → `{from, to, digitIdx, big, label, color}`; số đó trên biển 3D phát sáng đúng màu + thẻ `BeatCard` (số to + ý nghĩa) bật vào + tiếng `ding` + camera đập nhẹ.
+  - `plateRevealAt/To` (lúc đọc cả biển → toàn biển rực sáng + slam), `storyPill`, `askPill`, `priceAt/priceText` (đóng dấu giá + shimmer).
+  - Cắt bỏ phần thừa cuối video (VD câu "thôi tắt đi") bằng cách đặt `durationInFrames` của Composition kết thúc trước đoạn đó.
 - **Bản 3D Three.js (`templates/Plate3DVideo.tsx` + `assets/sfx_*.wav`):** Dùng khối 3D Three.js xoay + kim cương 3D.
 - **Bản 2D (`templates/SimSaleVideo.tsx`):** Dùng cho video bán SIM cần gọn nhẹ, nhanh.
 
