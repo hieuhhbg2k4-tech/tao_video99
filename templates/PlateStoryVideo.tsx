@@ -1,7 +1,7 @@
-﻿/**
- * tao_video99 â€” PlateStoryVideo (template chuyÃªn biá»ƒn sá»‘, ká»ƒ chuyá»‡n theo tá»«ng con sá»‘)
- * Má»Ÿ Ä‘áº§u Split-Screen "TRÃšNG Äáº¤U GIÃ" -> má»Ÿ toÃ n mÃ n hÃ¬nh -> Biá»ƒn sá»‘ 3D Three.js + kim cÆ°Æ¡ng xoay.
- * CHá»ˆ Cáº¦N Sá»¬A KHá»I `CONFIG` BÃŠN DÆ¯á»šI cho má»—i video má»›i.
+/**
+ * tao_video99 — PlateStoryVideo (template chuyên biển số, kể chuyện theo từng con số)
+ * Mở đầu Split-Screen "TRÚNG ĐẤU GIÁ" -> mở toàn màn hình -> Biển số 3D Three.js + kim cương xoay.
+ * CHỈ CẦN SỬA KHỐI `CONFIG` BÊN DƯỚI cho mỗi video mới.
  */
 import React, { useMemo } from 'react';
 import {
@@ -23,11 +23,11 @@ import rawCaptions from './captions3.json';
 
 // ===================== CONFIG =====================
 type Beat = {
-  from: number; // giÃ¢y báº¯t Ä‘áº§u
-  to: number; // giÃ¢y káº¿t thÃºc
-  digitIdx: number[]; // vá»‹ trÃ­ kÃ½ tá»± trong plateBottom cáº§n sÃ¡ng (VD '512.34' -> 0='5')
-  big: string; // chá»¯ sá»‘ lá»›n hiá»ƒn thá»‹
-  label: string; // Ã½ nghÄ©a
+  from: number; // giây bắt đầu
+  to: number; // giây kết thúc
+  digitIdx: number[]; // vị trí ký tự trong plateBottom cần sáng (VD '512.34' -> 0='5')
+  big: string; // chữ số lớn hiển thị
+  label: string; // ý nghĩa
   color: string;
 };
 
@@ -35,25 +35,25 @@ export const CONFIG = {
   videoSrc: 'source3.mp4',
   plateTop: '99B',
   plateBottom: '512.34',
-  introTitle: 'BIá»‚N Sá» Ká»‚ CHUYá»†N',
-  introTag: 'âœ¦ 99B - 512.34',
-  introCta: 'BÃŒNH LUáº¬N â€œQUAN TÃ‚Mâ€',
-  introSub: 'MÃŒNH TÆ¯ Váº¤N BIá»‚N Äáº¸P CHO NHÃ‰',
+  introTitle: 'BIỂN SỐ KỂ CHUYỆN',
+  introTag: '✦ 99B - 512.34',
+  introCta: 'BÌNH LUẬN “QUAN TÂM”',
+  introSub: 'MÌNH TƯ VẤN BIỂN ĐẸP CHO NHÉ',
   beats: [
-    { from: 5.7, to: 7.2, digitIdx: [0], big: '5', label: 'NÄ‚M XÃ‚Y Dá»°NG TÆ¯Æ NG LAI', color: '#FACC15' },
-    { from: 7.2, to: 8.3, digitIdx: [1], big: '1', label: 'LÃ’NG CHUNG THá»¦Y', color: '#F472B6' },
-    { from: 8.3, to: 9.4, digitIdx: [2], big: '2', label: 'Äá»¨A CON', color: '#38BDF8' },
-    { from: 9.4, to: 10.4, digitIdx: [4], big: '3', label: 'Táº¦NG NHÃ€ Äáº¸P', color: '#4ADE80' },
-    { from: 10.4, to: 11.6, digitIdx: [5], big: '4', label: 'BÃNH BON BON', color: '#FB923C' },
+    { from: 5.7, to: 7.2, digitIdx: [0], big: '5', label: 'NĂM XÂY DỰNG TƯƠNG LAI', color: '#FACC15' },
+    { from: 7.2, to: 8.3, digitIdx: [1], big: '1', label: 'LÒNG CHUNG THỦY', color: '#F472B6' },
+    { from: 8.3, to: 9.4, digitIdx: [2], big: '2', label: 'ĐỨA CON', color: '#38BDF8' },
+    { from: 9.4, to: 10.4, digitIdx: [4], big: '3', label: 'TẦNG NHÀ ĐẸP', color: '#4ADE80' },
+    { from: 10.4, to: 11.6, digitIdx: [5], big: '4', label: 'BÁNH BON BON', color: '#FB923C' },
   ] as Beat[],
-  plateRevealAt: 11.7, // Ä‘á»c cáº£ biá»ƒn -> toÃ n bá»™ biá»ƒn rá»±c sÃ¡ng
+  plateRevealAt: 11.7, // đọc cả biển -> toàn bộ biển rực sáng
   plateRevealTo: 15.5,
-  storyPill: { from: 16.0, to: 20.7, text: 'Dáº¤U áº¤N Cá»¦A CHáº¶NG ÄÆ¯á»œNG THÃ€NH CÃ”NG' },
-  askPill: { from: 20.8, to: 24.8, text: 'ðŸ’¬ CÃ“ ÄÃNG XUá»NG TIá»€N KHÃ”NG?' },
+  storyPill: { from: 16.0, to: 20.7, text: 'DẤU ẤN CỦA CHẶNG ĐƯỜNG THÀNH CÔNG' },
+  askPill: { from: 20.8, to: 24.8, text: '💬 CÓ ĐÁNG XUỐNG TIỀN KHÔNG?' },
   priceAt: 25.0,
-  priceText: 'CHá»ˆ VÃ€I CHá»¤C Cá»¦',
-  priceSub: 'âœ“ SANG TÃŠN CHÃNH CHá»¦',
-  keywords: ['5', '1', '2', '3', '4', 'nÄƒm', 'lÃ²ng', 'chung', 'thá»§y', 'Ä‘á»©a', 'con', 'táº§ng', 'nhÃ ', 'bá»‘n', 'bÃ¡nh', '99b', '512.34', 'dÃ£y', 'sá»‘', 'dáº¥u', 'áº¥n', 'thÃ nh', 'cÃ´ng', 'xuá»‘ng', 'tiá»n', 'bÃ¬nh', 'luáº­n', 'chá»¥c', 'cá»§'],
+  priceText: 'CHỈ VÀI CHỤC CỦ',
+  priceSub: '✓ SANG TÊN CHÍNH CHỦ',
+  keywords: ['5', '1', '2', '3', '4', 'năm', 'lòng', 'chung', 'thủy', 'đứa', 'con', 'tầng', 'nhà', 'bốn', 'bánh', '99b', '512.34', 'dãy', 'số', 'dấu', 'ấn', 'thành', 'công', 'xuống', 'tiền', 'bình', 'luận', 'chục', 'củ'],
 };
 // ==================================================
 
@@ -123,7 +123,7 @@ const Plate3DMesh: React.FC<{ startAt: number }> = ({ startAt }) => {
   const pFrame = frame - Math.round(startAt * fps);
   const enter = spring({ frame: pFrame, fps, config: { damping: 12, stiffness: 210 } });
 
-  // nhá»‹p "Ä‘áº­p" khi má»—i beat báº¯t Ä‘áº§u hoáº·c lÃºc Ä‘á»c cáº£ biá»ƒn
+  // nhịp "đập" khi mỗi beat bắt đầu hoặc lúc đọc cả biển
   const pulseStarts = [...CONFIG.beats.map((b) => b.from), CONFIG.plateRevealAt];
   let pulse = 0;
   for (const s of pulseStarts) {
@@ -311,7 +311,7 @@ export const PlateStoryVideo: React.FC = () => {
   const vidB = interpolate(expand, [0, 1], [3, 0]);
   const introOp = interpolate(expand, [0, 0.55], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
 
-  // retention zoom: Ä‘áº­p nháº¹ má»—i beat
+  // retention zoom: đập nhẹ mỗi beat
   let punch = 0;
   for (const b of CONFIG.beats) {
     const d = t - b.from;
@@ -357,8 +357,8 @@ export const PlateStoryVideo: React.FC = () => {
           <div style={{ position: 'absolute', top: 78, left: 274, width: 422, textAlign: 'center', fontFamily: 'system-ui, sans-serif', fontSize: 40, fontWeight: 900, color: '#FBBF24', textShadow: '0 4px 18px rgba(251,191,36,0.45)', transform: `scale(${introIn})` }}>
             {CONFIG.introTitle}
           </div>
-          <div style={{ position: 'absolute', top: 300, left: 16, width: 220, textAlign: 'center', fontFamily: 'system-ui, sans-serif', fontSize: 28, fontWeight: 900, color: '#FFFFFF', transform: `translateX(${(1 - introIn) * -120}px)` }}>
-            TRÃšNG Äáº¤U GIÃ
+          <div style={{ position: 'absolute', top: 300, left: 16, width: 220, textAlign: 'center', fontFamily: 'system-ui, sans-serif', fontSize: 23, fontWeight: 900, color: '#FFFFFF', whiteSpace: 'nowrap', transform: `translateX(${(1 - introIn) * -120}px)` }}>
+            TRÚNG ĐẤU GIÁ
           </div>
           <div style={{ position: 'absolute', top: 350, left: 16, width: 220, fontSize: 5.5, transform: `translateX(${(1 - introIn) * -140}px) scale(${introIn})` }}>
             <AuctionPlateCard />
@@ -392,7 +392,7 @@ export const PlateStoryVideo: React.FC = () => {
         <Plate3DMesh startAt={2.9} />
       </ThreeCanvas>
 
-      {/* OVERLAYS dÆ°á»›i biá»ƒn */}
+      {/* OVERLAYS dưới biển */}
       {t >= 2.9 && (
         <AbsoluteFill style={{ alignItems: 'center', pointerEvents: 'none' }}>
           <div style={{ position: 'absolute', top: 350, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -402,7 +402,7 @@ export const PlateStoryVideo: React.FC = () => {
               </Sequence>
             )}
             {t >= CONFIG.plateRevealAt && t < CONFIG.plateRevealTo && (
-              <Pill at={CONFIG.plateRevealAt} text={`${CONFIG.plateTop} â€¢ ${CONFIG.plateBottom} = Cáº¢ Má»˜T CÃ‚U CHUYá»†N`} color="#FACC15" fontSize={21} />
+              <Pill at={CONFIG.plateRevealAt} text={`${CONFIG.plateTop} • ${CONFIG.plateBottom} = CẢ MỘT CÂU CHUYỆN`} color="#FACC15" fontSize={21} />
             )}
             {t >= CONFIG.storyPill.from && t < CONFIG.storyPill.to && <Pill at={CONFIG.storyPill.from} text={CONFIG.storyPill.text} color="#38BDF8" fontSize={20} />}
             {t >= CONFIG.askPill.from && t < CONFIG.askPill.to && <Pill at={CONFIG.askPill.from} text={CONFIG.askPill.text} color="#FFFFFF" bg="#16A34A" fontSize={24} />}
