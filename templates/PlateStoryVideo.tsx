@@ -33,6 +33,8 @@ type Beat = {
 
 export const CONFIG = {
   videoSrc: 'source3.mp4',
+  videoFilter: 'none', // VD 'brightness(1.3) contrast(1.08) saturate(1.1)' cho video tối
+  overlayTop: 350, // vị trí (px) cụm thẻ ý nghĩa/giá; 350 = ngay dưới biển, ~860 = trên ngực nếu mặt quay sát
   plateTop: '99B',
   plateBottom: '512.34',
   introTitle: 'BIỂN SỐ KỂ CHUYỆN',
@@ -377,7 +379,7 @@ export const PlateStoryVideo: React.FC = () => {
 
       {/* VIDEO */}
       <div style={{ position: 'absolute', left: vidLeft, top: vidTop, width: vidW, height: vidH, borderRadius: vidR, overflow: 'hidden', border: `${vidB}px solid #FBBF24`, boxShadow: vidB > 0.2 ? '0 0 32px rgba(251,191,36,0.35)' : 'none' }}>
-        <div style={{ width: '100%', height: '100%', transform: `scale(${camScale})` }}>
+        <div style={{ width: '100%', height: '100%', transform: `scale(${camScale})`, filter: CONFIG.videoFilter }}>
           <Video src={staticFile(CONFIG.videoSrc)} style={{ width: '100%', height: '100%' }} />
         </div>
         {introOp > 0.05 && (
@@ -395,7 +397,7 @@ export const PlateStoryVideo: React.FC = () => {
       {/* OVERLAYS dưới biển */}
       {t >= 2.9 && (
         <AbsoluteFill style={{ alignItems: 'center', pointerEvents: 'none' }}>
-          <div style={{ position: 'absolute', top: 350, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <div style={{ position: 'absolute', top: CONFIG.overlayTop, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
             {beat && (
               <Sequence from={Math.round(beat.from * fps)} layout="none" key={beat.from}>
                 <BeatCard beat={beat} />
@@ -456,9 +458,9 @@ const BeatCard: React.FC<{ beat: Beat }> = ({ beat }) => {
     >
       <div
         style={{
-          width: 64, height: 64, borderRadius: 16, backgroundColor: beat.color,
+          minWidth: 64, height: 64, padding: '0 10px', borderRadius: 16, backgroundColor: beat.color,
           display: 'flex', justifyContent: 'center', alignItems: 'center',
-          fontFamily: 'system-ui, sans-serif', fontSize: 50, fontWeight: 900, color: '#0F172A',
+          fontFamily: 'system-ui, sans-serif', fontSize: beat.big.length > 2 ? 40 : 50, fontWeight: 900, color: '#0F172A',
           transform: `scale(${numScale})`,
         }}
       >
