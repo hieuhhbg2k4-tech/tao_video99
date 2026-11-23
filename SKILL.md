@@ -48,6 +48,10 @@ Khởi tạo project Remotion với `remotion`, `@remotion/cli`, `@remotion/capt
   - `beats[]`: mỗi lần người nói giải nghĩa 1 con số → `{from, to, digitIdx, big, label, color}`; số đó trên biển 3D phát sáng đúng màu + thẻ `BeatCard` (số to + ý nghĩa) bật vào + tiếng `ding` + camera đập nhẹ.
   - `plateRevealAt/To` (lúc đọc cả biển → toàn biển rực sáng + slam), `storyPill`, `askPill`, `priceAt/priceText` (đóng dấu giá + shimmer).
   - Cắt bỏ phần thừa cuối video (VD câu "thôi tắt đi") bằng cách đặt `durationInFrames` của Composition kết thúc trước đoạn đó.
+  - `overlayTop`: 350 (thẻ ngay dưới biển) — nếu người nói quay **sát mặt**, đặt ~860 để thẻ nằm trên vùng ngực, không che mặt.
+  - `videoFilter`: video quay **tối/ban đêm** → `'brightness(1.35) contrast(1.08) saturate(1.12)'`.
+  - Video nói liền mạch không ngắt nghỉ → chia thời gian từng chữ theo **số âm tiết** (số biển đọc dài hơn: `30L`=3, `029.29`=5).
+  - Luôn ghi file `.tsx/.json` có tiếng Việt bằng **Python (UTF-8)**, không dùng `Get-Content/Set-Content` của PowerShell (sẽ lỗi font).
 - **Bản 3D Three.js (`templates/Plate3DVideo.tsx` + `assets/sfx_*.wav`):** Dùng khối 3D Three.js xoay + kim cương 3D.
 - **Bản 2D (`templates/SimSaleVideo.tsx`):** Dùng cho video bán SIM cần gọn nhẹ, nhanh.
 
